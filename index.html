@@ -3,23 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mening Fayllarim</title>
+  <title>Mening Bulutli Xotiram</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; padding: 40px 20px; }
-    .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; width: 100%; }
-    h2 { margin-top: 0; color: #333; }
-    .file { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e1e4e8; border-radius: 8px; margin-top: 15px; }
-    .btn { background: #2ea44f; color: white; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; }
-    .btn:hover { background: #2c974b; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 30px 15px; margin: 0; }
+    .container { background: white; padding: 25px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); max-width: 500px; width: 100%; }
+    h2 { margin-top: 0; color: #1c1e21; text-align: center; }
+    .upload-box { border: 2px dashed #0084ff; border-radius: 10px; padding: 25px; text-align: center; background: #f7fbff; margin-bottom: 20px; }
+    input[type="file"] { margin-bottom: 15px; width: 100%; }
+    button { background: #0084ff; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; }
+    button:hover { background: #0073e6; }
+    button:disabled { background: #a0cfff; cursor: not-allowed; }
+    #status { margin-top: 10px; font-size: 14px; color: #555; text-align: center; }
+    .file-list { margin-top: 20px; }
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #e4e6eb; border-radius: 8px; margin-bottom: 10px; background: #fafafa; }
+    .file-name { font-size: 14px; color: #333; word-break: break-all; margin-right: 10px; }
+    .dl-btn { background: #2ea44f; color: white; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; white-space: nowrap; }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2>📁 Mening fayllarim</h2>
-    <div class="file">
-      <span>ERICA Grammar @DSATuz.pdf</span>
-      <a href="ERICA Grammar @DSATuz.pdf" class="btn" download>Yuklab olish</a>
+  <div class="container">
+    <h2>☁️ Mening Fayllarim</h2>
+    
+    <div class="upload-box">
+      <input type="file" id="fileInput">
+      <button id="uploadBtn" onclick="uploadFile()">Saytga fayl yuklash</button>
+      <div id="status"></div>
+    </div>
+
+    <div class="file-list" id="fileList">
+      <div class="file-item">
+        <span class="file-name">ERICA Grammar @DSATuz.pdf</span>
+        <a href="ERICA Grammar @DSATuz.pdf" class="dl-btn" download>Yuklab olish</a>
+      </div>
     </div>
   </div>
+
+  <script>
+    window.onload = function() {
+      const saved = JSON.parse(localStorage.getItem('myFiles') || '[]');
+      saved.forEach(f => addFileToUI(f.name, f.url));
+    };
+
+    async function uploadFile() {
+      const input = document.getElementById('fileInput');
+      const btn = document.getElementById('uploadBtn');
+      const status = document.getElementById('status');
+
+      if (!input.files.length) {
+        status.innerText = "⚠️ Avval fayl tanlang!";
+        return;
+      }
+
+      const file = input.files[0];
+      const formData = new FormData();
+      formData.append('reqtype', 'fileupload');
+      formData.append('fileToUpload', file);
+
+      btn.disabled = true;
+      status.innerText = "⏳ Yuklanmoqda, kuting...";
+
+      try {
+        const res = await fetch('https://corsproxy.io', {
+          method: 'POST',
+          body: formData
+        });
+        const url = await res.text();
+
+        if (url.startsWith('http')) {
+          addFileToUI(file.name, url);
+          saveFile(file.name, url);
+          status.innerText = "✅ Muvaffaqiyatli yuklandi!";
+          input.value = "";
+        } else {
+          status.innerText = "❌ Xatolik yuz berdi. Qayta urinib ko‘ring.";
+        }
+      } catch (e) {
+        status.innerText = "❌ Internet yoki server xatoligi.";
+      }
+      btn.disabled = false;
+    }
+
+    function addFileToUI(name, url) {
+      const list = document.getElementById('fileList');
+      const div = document.createElement('div');
+      div.className = 'file-item';
+      div.innerHTML = `<span class="file-name">${name}</span><a href="${url}" target="_blank" class="dl-btn">Ochish / Yuklash</a>`;
+      list.prepend(div);
+    }
+
+    function saveFile(name, url) {
+      const saved = JSON.parse(localStorage.getItem('myFiles') || '[]');
+      saved.push({ name, url });
+      localStorage.setItem('myFiles', JSON.stringify(saved));
+    }
+  </script>
 </body>
 </html>
